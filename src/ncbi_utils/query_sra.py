@@ -56,6 +56,9 @@ def _search_id_with(url, db) -> str:
     if not search_result["esearchresult"]:
         raise ValueError(f"acc {acc} not found in the {db} database")
 
+    if "idlist" not in search_result["esearchresult"]:
+        raise RuntimeError(f"Missing idlist for url: {url}")
+
     if len(search_result["esearchresult"]["idlist"]) != 1:
         raise RuntimeError(f"We expected just 1 id in idlist for acc: {acc}")
 
@@ -92,6 +95,122 @@ def fetch_bioproject_acc_for_experiment(id: str):
         .find("EXTERNAL_ID")
     )
     return external_id.text
+
+
+def fetch_bioproject_info(id: str):
+    if not id.isdigit():
+        raise RuntimeError(f"We expected an all digit experiment id, but we got: {id}")
+    url = NCBI_FETCH_BASE_URL + f"db=bioproject&id={id}"
+
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        raise RuntimeError(f"There was an error requesting the url: {url}")
+
+    xml = response.content
+    record_set = ET.fromstring(xml)
+    project = record_set.find("DocumentSummary").find("Project")
+    info = {}
+    info["acc"] = project.find("ProjectID").find("ArchiveID").attrib["accession"]
+    info["title"] = project.find("ProjectDescr").find("Title").text
+    info["description"] = project.find("ProjectDescr").find("Description").text
+    target = project.find("ProjectType").find("ProjectTypeSubmission").find("Target")
+    info["type"] = {
+        "capture": target.attrib["capture"],
+        "material": target.attrib["material"],
+    }
+    info["submission_last_update"] = (
+        record_set.find("DocumentSummary").find("Submission").attrib["last_update"]
+    )
+    return info
+
+
+def ask_ncbi_for_biosample_ids_in_bioproject(bioproject_id: str) -> list[str]:
+    if bioproject_id.lower().startswith("prj"):
+        raise ValueError(
+            f"Use the numeric id, not the PRJXXXX accession: {bioproject_id}"
+        )
+    try:
+        int(bioproject_id)
+    except ValueError:
+        raise ValueError(
+            f"The id should be an str, but all numbers (e.g. 1025377), but it was: {bioproject_id}"
+        )
+
+    url = f"{NCBI_EUTILS_BASE_URL}elink.fcgi?dbfrom=bioproject&db=biosample&id={bioproject_id}&retmode=json"
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        raise RuntimeError(f"Thre was a problem getting the URL: {url}")
+
+    jsons = response.content
+
+    search_result = json.loads(jsons)
+
+    biosample_ids = set()
+    for linkset in search_result["linksets"]:
+        for linksetdb in linkset["linksetdbs"]:
+            biosample_ids.update(linksetdb["links"])
+    return sorted(biosample_ids)
+
+
+def fetch_biosample_info(biosample_id: str):
+    if biosample_id.lower().startswith("prj"):
+        raise ValueError(
+            f"Use the numeric id, not the SAMNXXXX accession: {biosample_id}"
+        )
+    try:
+        int(biosample_id)
+    except ValueError:
+        raise ValueError(
+            f"The id should be an str, but all numbers (e.g. 1025377), but it was: {biosample_id}"
+        )
+
+    url = f"{NCBI_EUTILS_BASE_URL}efetch.fcgi?db=biosample&id={biosample_id}"
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        raise RuntimeError(f"There was a problem getting the URL: {url}")
+
+    xml = response.content
+
+    biosample_set = ET.fromstring(xml)
+    biosample_xml = biosample_set.find("BioSample")
+    biosample = {}
+    biosample["biosampledb_id"] = biosample_xml.attrib["id"]
+    biosample["biosampledb_accession"] = biosample_xml.attrib["accession"]
+    biosample["publication_date"] = biosample_xml.attrib["publication_date"]
+    for id in biosample_xml.find("Ids").findall("Id"):
+        try:
+            id.attrib["db"]
+        except KeyError:
+            continue
+        if id.attrib["db"] == "SRA":
+            biosample["sra_accession"] = id.text
+
+    description = biosample_xml.find("Description")
+    biosample["title"] = description.find("Title").text
+    organism = description.find("Organism")
+    biosample["organism_id"] = organism.attrib["taxonomy_id"]
+    biosample["organism_name"] = organism.attrib["taxonomy_name"]
+
+    attributes = {}
+    for attribute_xml in biosample_xml.find("Attributes"):
+        attributes[attribute_xml.attrib["attribute_name"]] = attribute_xml.text
+    biosample["attributes"] = attributes
+
+    return biosample
+
+
+def search_experiments_in_sra_with_biosample_accession(biosample_acc, cache_dir=None):
+    url = f"{NCBI_EUTILS_BASE_URL}esearch.fcgi?db=sra&term={biosample_acc}[BioSample]&retmode=json"
+    response = requests.get(url)
+    assert response.status_code == 200
+    jsons = response.content
+    search_result = json.loads(jsons)
+    ids = search_result["esearchresult"]["idlist"]
+
+    return ids
 
 
 if __name__ == "__main__":
@@ -3829,11 +3948,41 @@ if __name__ == "__main__":
         "SRX17101769",
         "SRX14000215",
     ]
+    projects_fetched = set()
     for idx, acc in enumerate(experiment_accs):
         id_ = cache_call(search_id_for_experiment_acc, args=(acc,), cache_dir=cache_dir)
+        print("experiment", idx, id_)
 
         project_acc = cache_call(
             fetch_bioproject_acc_for_experiment, args=(id_,), cache_dir=cache_dir
         )
-        project_id = search_id_for_bioproject_acc(project_acc)
+        if project_acc in projects_fetched:
+            continue
+        projects_fetched.add(project_acc)
+
+        project_id = cache_call(
+            search_id_for_bioproject_acc, args=(project_acc,), cache_dir=cache_dir
+        )
         print(idx, acc, project_acc, project_id)
+        project_info = cache_call(
+            fetch_bioproject_info, args=(project_id,), cache_dir=cache_dir
+        )
+        print(project_info)
+        biosample_ids = cache_call(
+            ask_ncbi_for_biosample_ids_in_bioproject,
+            args=(project_id,),
+            cache_dir=cache_dir,
+        )
+        print(biosample_ids)
+
+        for biosample_id in biosample_ids:
+            biosample = cache_call(
+                fetch_biosample_info, args=(biosample_id,), cache_dir=cache_dir
+            )
+            print(biosample)
+            experiments = cache_call(
+                search_experiments_in_sra_with_biosample_accession,
+                args=(biosample["biosampledb_accession"],),
+                cache_dir=cache_dir,
+            )
+            print(experiments)
