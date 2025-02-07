@@ -59,7 +59,9 @@ def _search_id_with(url, db) -> str:
     if "idlist" not in search_result["esearchresult"]:
         raise RuntimeError(f"Missing idlist for url: {url}")
 
-    if len(search_result["esearchresult"]["idlist"]) != 1:
+    if not search_result["esearchresult"]["idlist"]:
+        raise RuntimeError(f"No ids in idlist for acc: {acc}")
+    elif len(search_result["esearchresult"]["idlist"]) != 1:
         raise RuntimeError(f"We expected just 1 id in idlist for acc: {acc}")
 
     id_ = search_result["esearchresult"]["idlist"][0]
@@ -94,7 +96,10 @@ def fetch_bioproject_acc_for_experiment(id: str):
         .find("IDENTIFIERS")
         .find("EXTERNAL_ID")
     )
-    return external_id.text
+    if external_id is not None:
+        return external_id.text
+    else:
+        raise RuntimeError(f"No bioproject acc found for experiment: {id}")
 
 
 def fetch_bioproject_info(id: str):
@@ -119,9 +124,12 @@ def fetch_bioproject_info(id: str):
         "capture": target.attrib["capture"],
         "material": target.attrib["material"],
     }
-    info["submission_last_update"] = (
-        record_set.find("DocumentSummary").find("Submission").attrib["last_update"]
-    )
+    try:
+        info["submission_last_update"] = (
+            record_set.find("DocumentSummary").find("Submission").attrib["last_update"]
+        )
+    except KeyError:
+        pass
     return info
 
 
@@ -3948,8 +3956,13 @@ if __name__ == "__main__":
         "SRX17101769",
         "SRX14000215",
     ]
+    experiments_to_ignore = ["SRX118405"]
     projects_fetched = set()
     for idx, acc in enumerate(experiment_accs):
+        print("experiment acc: ", acc)
+        if acc in experiments_to_ignore:
+            print("Ignoring experiment:", acc)
+            continue
         id_ = cache_call(search_id_for_experiment_acc, args=(acc,), cache_dir=cache_dir)
         print("experiment", idx, id_)
 
