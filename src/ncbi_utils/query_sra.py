@@ -584,13 +584,11 @@ if __name__ == "__main__":
             project_info = cache_call(
                 fetch_bioproject_info, args=(project_id,), cache_dir=cache_dir
             )
-            print(project_info)
             biosample_ids = cache_call(
                 ask_ncbi_for_biosample_ids_in_bioproject,
                 args=(project_id,),
                 cache_dir=cache_dir,
             )
-        # print(biosample_ids)
 
         for biosample_id in biosample_ids:
             biosample = cache_call(
@@ -606,13 +604,23 @@ if __name__ == "__main__":
                 experiment = cache_call(
                     fetch_experiment_info, args=(experiment_id,), cache_dir=cache_dir
                 )
-                print(experiment)
                 date = [run["date"] for run in experiment["runs"]][0]
                 is_public = [run["date"] for run in experiment["runs"]][0]
+
+                for run in experiment["runs"]:
+                    print(run["accession"])
+                assert False
 
                 experiments[experiment["acc"]] = {
                     "accession": experiment["acc"],
                     "bioproject": bioproject_acc,
+                    "bioproject_title": project_info["title"],
+                    "bioproject_description": project_info["description"],
+                    "biosample_title": biosample["title"],
+                    "biosample_organism": biosample["organism_name"],
+                    "biosample_cultivar": biosample.get("attributes", {}).get(
+                        "cultivar", ""
+                    ),
                     "library_strategy": experiment["design"]["library"]["strategy"],
                     "library_source": experiment["design"]["library"]["source"],
                     "library_selection": experiment["design"]["library"]["selection"],
