@@ -237,7 +237,6 @@ def fetch_experiment_info(experiment_id: str):
         )
 
     url = f"{NCBI_EUTILS_BASE_URL}efetch.fcgi?db=sra&id={experiment_id}"
-    print(url)
     response = requests.get(url)
     xml = response.content
     experiment_package_set = ET.fromstring(xml)
@@ -589,7 +588,6 @@ if __name__ == "__main__":
                 args=(bioproject_acc,),
                 cache_dir=cache_dir,
             )
-            # print(idx, bioproject_acc, project_id)
             project_info = cache_call(
                 fetch_bioproject_info, args=(project_id,), cache_dir=cache_dir
             )
@@ -603,7 +601,6 @@ if __name__ == "__main__":
             biosample = cache_call(
                 fetch_biosample_info, args=(biosample_id,), cache_dir=cache_dir
             )
-            # print(biosample)
             experiment_ids = cache_call(
                 search_experiments_in_sra_with_biosample_accession,
                 args=(biosample["biosampledb_accession"],),
