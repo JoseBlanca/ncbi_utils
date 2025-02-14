@@ -3,6 +3,7 @@ from pathlib import Path
 from subprocess import run, CalledProcessError
 
 PREFETCH_BIN = "prefetch"
+VALIDATE_BIN = "vdb-validate"
 FASTERQ_DUMP_BIN = "fasterq-dump"
 GZIP_BIN = "gzip"
 
@@ -41,8 +42,18 @@ def download_fastq_from_sra(
             )
             raise CalledProcessError(msg)
 
-        fast_out_dir = working_dir_path / "fast"
         sra_dir = working_dir_path / run_acc
+        cmd = [VALIDATE_BIN, str(sra_dir)]
+        try:
+            run(cmd, check=True, capture_output=True)
+        except CalledProcessError:
+            msg = (
+                f"There was an error validating the prefetched accession {run_acc}, the command was: "
+                + " ".join(cmd)
+            )
+            raise CalledProcessError(msg)
+
+        fast_out_dir = working_dir_path / "fast"
 
         cmd = [
             FASTERQ_DUMP_BIN,
