@@ -32,7 +32,10 @@ def cache_call(funct, cache_dir: Path, args=None, kwargs=None):
     hashes.extend((_hash(kwargs[arg]) for arg in sorted(kwargs.keys())))
 
     hash_ = _hash(tuple(hashes))
-    cache_path = cache_dir / f"{funct.__name__}_{hash_}"
+    cache_dir.mkdir(exist_ok=True)
+    cache_dir = cache_dir / funct.__name__
+    cache_dir.mkdir(exist_ok=True)
+    cache_path = cache_dir / str(hash_)
     if cache_path.exists():
         with cache_path.open("rb") as fhand:
             result = pickle.load(fhand)
@@ -45,7 +48,7 @@ def cache_call(funct, cache_dir: Path, args=None, kwargs=None):
 
 def search_id_for_experiment_acc(acc: str) -> str:
     url = NCBI_SEARCH_BASE_URL + f"db=sra&term={acc}[Accession]&retmode=json&retmax=1"
-    return _search_id_with(url, db="sra")
+    return _search_id_with(url, acc=acc, db="sra")
 
 
 def _search_id_with(url, acc, db) -> str:
@@ -85,7 +88,7 @@ def fetch_bioproject_acc_for_experiment(id: str):
     if not id.isdigit():
         raise RuntimeError(f"We expected an all digit experiment id, but we got: {id}")
 
-    url = NCBI_FETCH_BASE_URL + f"db=sra&id={id_}"
+    url = NCBI_FETCH_BASE_URL + f"db=sra&id={id}"
     response = requests.get(url)
     assert response.status_code == 200
     xml = response.content
@@ -301,7 +304,7 @@ def fetch_experiment_info(experiment_id: str):
             .text,
         }
     else:
-        raise RuntimeError("Unknown platform for: {url}")
+        raise RuntimeError(f"Unknown platform for: {url}")
 
     info["organization"] = experiment_package.find("Organization").find("Name").text
     try:
@@ -567,6 +570,7 @@ if __name__ == "__main__":
         "PRJNA936910",
         "PRJNA953768",
         "PRJNA988534",
+        "PRJEB5235",
         "SRP010718",
     ]
     biosample_ids_for_bioprojects = {"SRP010718": ["780126"]}
@@ -609,7 +613,6 @@ if __name__ == "__main__":
 
                 for run in experiment["runs"]:
                     print(run["accession"])
-                assert False
 
                 experiments[experiment["acc"]] = {
                     "accession": experiment["acc"],
