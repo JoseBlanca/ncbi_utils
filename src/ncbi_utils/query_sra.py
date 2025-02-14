@@ -303,6 +303,11 @@ def fetch_experiment_info(experiment_id: str):
             .find("INSTRUMENT_MODEL")
             .text,
         }
+    elif platform.find("BGISEQ"):
+        info["platform"] = {
+            "platform": "bgiseq",
+            "instrument_model": platform.find("BGISEQ").find("INSTRUMENT_MODEL").text,
+        }
     else:
         raise RuntimeError(f"Unknown platform for: {url}")
 
