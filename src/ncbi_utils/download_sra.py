@@ -6,6 +6,7 @@ PREFETCH_BIN = "prefetch"
 VALIDATE_BIN = "vdb-validate"
 FASTERQ_DUMP_BIN = "fasterq-dump"
 GZIP_BIN = "gzip"
+GZIP_BIN = "pigz"
 
 
 def download_fastq_from_sra(
