@@ -76,6 +76,12 @@ def _search_id_with(url, acc, db) -> str:
     return id_
 
 
+def search_id_for_biosample_acc(acc: str) -> str:
+    db = "biosample"
+    url = NCBI_SEARCH_BASE_URL + f"db={db}&term={acc}[Accession]&retmode=json&retmax=1"
+    return _search_id_with(url, acc, db=db)
+
+
 def search_id_for_bioproject_acc(acc: str) -> str:
     url = (
         NCBI_SEARCH_BASE_URL
@@ -122,11 +128,23 @@ def fetch_bioproject_info(id: str):
     info["acc"] = project.find("ProjectID").find("ArchiveID").attrib["accession"]
     info["title"] = project.find("ProjectDescr").find("Title").text
     info["description"] = project.find("ProjectDescr").find("Description").text
-    target = project.find("ProjectType").find("ProjectTypeSubmission").find("Target")
-    info["type"] = {
-        "capture": target.attrib["capture"],
-        "material": target.attrib["material"],
-    }
+    try:
+        target = (
+            project.find("ProjectType").find("ProjectTypeSubmission").find("Target")
+        )
+    except AttributeError:
+        target = None
+    if target:
+        info["type"] = {
+            "capture": target.attrib["capture"],
+            "material": target.attrib["material"],
+        }
+    else:
+        info["type"] = {
+            "capture": "",
+            "material": "",
+        }
+
     try:
         info["submission_last_update"] = (
             record_set.find("DocumentSummary").find("Submission").attrib["last_update"]
@@ -242,13 +260,13 @@ def fetch_experiment_info(experiment_id: str):
     experiment_package_set = ET.fromstring(xml)
     experiment_packages = experiment_package_set.findall("EXPERIMENT_PACKAGE")
     if not experiment_packages:
-        raise RuntimeError("No experiment package found: {url}")
+        raise RuntimeError(f"No experiment package found: {url}")
     elif len(experiment_packages) != 1:
-        raise RuntimeError("We expected only one experiment package: {url}")
+        raise RuntimeError(f"We expected only one experiment package: {url}")
     experiment_package = experiment_packages[0]
     experiments = experiment_package.findall("EXPERIMENT")
     if len(experiments) != 1:
-        raise RuntimeError("We expected only one experiment: {url}")
+        raise RuntimeError(f"We expected only one experiment: {url}")
     experiment = experiments[0]
 
     info = {"acc": experiment.find("IDENTIFIERS").find("PRIMARY_ID").text}
@@ -306,6 +324,18 @@ def fetch_experiment_info(experiment_id: str):
         info["platform"] = {
             "platform": "bgiseq",
             "instrument_model": platform.find("BGISEQ").find("INSTRUMENT_MODEL").text,
+        }
+    elif platform.find("LS454"):
+        info["platform"] = {
+            "platform": "454",
+            "instrument_model": platform.find("LS454").find("INSTRUMENT_MODEL").text,
+        }
+    elif platform.find("ABI_SOLID"):
+        info["platform"] = {
+            "platform": "solid",
+            "instrument_model": platform.find("ABI_SOLID")
+            .find("INSTRUMENT_MODEL")
+            .text,
         }
     else:
         raise RuntimeError(f"Unknown platform for: {url}")
