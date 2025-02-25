@@ -34,24 +34,26 @@ def download_fastq_from_sra(
     ) as working_dir:
         working_dir_path = Path(working_dir)
         cmd = [PREFETCH_BIN, "-O", str(working_dir_path), run_acc]
-        try:
-            run(cmd, check=True, capture_output=True)
-        except CalledProcessError:
+        process = run(cmd, capture_output=True)
+        if process.returncode:
             msg = (
                 f"There was an error prefetching the accession {run_acc}, the command was: "
                 + " ".join(cmd)
             )
+            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stdout.decode()}"
             raise RuntimeError(msg)
 
         sra_dir = working_dir_path / run_acc
         cmd = [VALIDATE_BIN, str(sra_dir)]
-        try:
-            run(cmd, check=True, capture_output=True)
-        except CalledProcessError:
+        process = run(cmd, check=True, capture_output=True)
+        if process.returncode:
             msg = (
                 f"There was an error validating the prefetched accession {run_acc}, the command was: "
                 + " ".join(cmd)
             )
+            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stdout.decode()}"
             raise RuntimeError(msg)
 
         fast_out_dir = working_dir_path / "fast"
