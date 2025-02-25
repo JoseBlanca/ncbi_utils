@@ -59,6 +59,7 @@ def download_fastq_from_sra(
             msg = "cmd: " + " ".join(cmd)
             msg += f"\nstdout:\n{process.stdout.decode()}"
             msg += f"\nstderr:\n{process.stderr.decode()}"
+            print(msg)
 
         sra_dir = working_dir_path / run_acc
         cmd = [VALIDATE_BIN, str(sra_dir)]
@@ -75,6 +76,7 @@ def download_fastq_from_sra(
             msg = "cmd: " + " ".join(cmd)
             msg += f"\nstdout:\n{process.stdout.decode()}"
             msg += f"\nstderr:\n{process.stderr.decode()}"
+            print(msg)
 
         fast_out_dir = working_dir_path / "fast"
 
@@ -92,14 +94,20 @@ def download_fastq_from_sra(
             r"@$ac.$si.$ri:$sg:$sn",
             str(sra_dir),
         ]
-        try:
-            run(cmd, check=True, capture_output=True)
-        except CalledProcessError:
+        process = run(cmd, capture_output=True)
+        if process.returncode:
             msg = (
                 f"There was an error doing fasterq_dump the accession {run_acc}, the command was: "
                 + " ".join(cmd)
             )
-            raise CalledProcessError(msg)
+            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stderr.decode()}"
+            raise RuntimeError(msg)
+        if verbose:
+            msg = "cmd: " + " ".join(cmd)
+            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stderr.decode()}"
+            print(msg)
 
         for path in fast_out_dir.iterdir():
             cmd = [GZIP_BIN, path]
