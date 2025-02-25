@@ -57,7 +57,7 @@ def download_fastq_from_sra(
 
         sra_dir = working_dir_path / run_acc
         cmd = [VALIDATE_BIN, str(sra_dir)]
-        process = run(cmd, check=True, capture_output=True)
+        process = run(cmd, capture_output=True)
         if process.returncode:
             msg = (
                 f"There was an error validating the prefetched accession {run_acc}, the command was: "
