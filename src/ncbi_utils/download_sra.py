@@ -10,7 +10,11 @@ GZIP_BIN = "pigz"
 
 
 def download_fastq_from_sra(
-    run_acc, out_dir, temp_dir: None | Path = None, fasterq_dump_num_threads=6
+    run_acc,
+    out_dir,
+    temp_dir: None | Path = None,
+    fasterq_dump_num_threads=6,
+    max_dowload_size=30,
 ):
     out_dir = Path(out_dir)
     if not out_dir.exists():
@@ -33,7 +37,14 @@ def download_fastq_from_sra(
         dir=temp_dir, prefix="sra_download_"
     ) as working_dir:
         working_dir_path = Path(working_dir)
-        cmd = [PREFETCH_BIN, "-O", str(working_dir_path), run_acc]
+        cmd = [
+            PREFETCH_BIN,
+            "--max-size",
+            str(max_dowload_size),
+            "-O",
+            str(working_dir_path),
+            run_acc,
+        ]
         process = run(cmd, capture_output=True)
         if process.returncode:
             msg = (
