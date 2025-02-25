@@ -15,6 +15,7 @@ def download_fastq_from_sra(
     temp_dir: None | Path = None,
     fasterq_dump_num_threads=6,
     max_dowload_size=30,
+    verbose=False,
 ):
     out_dir = Path(out_dir)
     if not out_dir.exists():
@@ -54,6 +55,10 @@ def download_fastq_from_sra(
             msg += f"\nstdout:\n{process.stdout.decode()}"
             msg += f"\nstderr:\n{process.stdout.decode()}"
             raise RuntimeError(msg)
+        if verbose:
+            msg = "cmd: " + " ".join(cmd)
+            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stdout.decode()}"
 
         sra_dir = working_dir_path / run_acc
         cmd = [VALIDATE_BIN, str(sra_dir)]
@@ -66,6 +71,10 @@ def download_fastq_from_sra(
             msg += f"\nstdout:\n{process.stdout.decode()}"
             msg += f"\nstderr:\n{process.stdout.decode()}"
             raise RuntimeError(msg)
+        if verbose:
+            msg = "cmd: " + " ".join(cmd)
+            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stdout.decode()}"
 
         fast_out_dir = working_dir_path / "fast"
 
