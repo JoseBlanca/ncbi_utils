@@ -44,7 +44,7 @@ def download_fastq_from_sra(
                 f"There was an error prefetching the accession {run_acc}, the command was: "
                 + " ".join(cmd)
             )
-            raise CalledProcessError(msg)
+            raise RuntimeError(msg)
 
         sra_dir = working_dir_path / run_acc
         cmd = [VALIDATE_BIN, str(sra_dir)]
@@ -55,7 +55,7 @@ def download_fastq_from_sra(
                 f"There was an error validating the prefetched accession {run_acc}, the command was: "
                 + " ".join(cmd)
             )
-            raise CalledProcessError(msg)
+            raise RuntimeError(msg)
 
         fast_out_dir = working_dir_path / "fast"
 
