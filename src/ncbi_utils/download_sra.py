@@ -20,9 +20,6 @@ def download_fastq_from_sra(
             f"out_dir should be a directory, but the given one is not: {out_dir}"
         )
 
-    for path in out_dir.iterdir():
-        print(path, path.name.startswith(run_acc))
-
     previous_downloaded_files = [
         str(path) for path in out_dir.iterdir() if path.name.startswith(run_acc)
     ]
