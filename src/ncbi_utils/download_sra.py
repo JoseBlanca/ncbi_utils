@@ -41,7 +41,7 @@ def download_fastq_from_sra(
         cmd = [
             PREFETCH_BIN,
             "--max-size",
-            str(max_dowload_size),
+            f"{max_dowload_size}g",
             "-O",
             str(working_dir_path),
             run_acc,
