@@ -53,12 +53,12 @@ def download_fastq_from_sra(
                 + " ".join(cmd)
             )
             msg += f"\nstdout:\n{process.stdout.decode()}"
-            msg += f"\nstderr:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stderr.decode()}"
             raise RuntimeError(msg)
         if verbose:
             msg = "cmd: " + " ".join(cmd)
             msg += f"\nstdout:\n{process.stdout.decode()}"
-            msg += f"\nstderr:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stderr.decode()}"
 
         sra_dir = working_dir_path / run_acc
         cmd = [VALIDATE_BIN, str(sra_dir)]
@@ -69,12 +69,12 @@ def download_fastq_from_sra(
                 + " ".join(cmd)
             )
             msg += f"\nstdout:\n{process.stdout.decode()}"
-            msg += f"\nstderr:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stderr.decode()}"
             raise RuntimeError(msg)
         if verbose:
             msg = "cmd: " + " ".join(cmd)
             msg += f"\nstdout:\n{process.stdout.decode()}"
-            msg += f"\nstderr:\n{process.stdout.decode()}"
+            msg += f"\nstderr:\n{process.stderr.decode()}"
 
         fast_out_dir = working_dir_path / "fast"
 
