@@ -46,6 +46,9 @@ def download_fastq_from_sra(
             str(working_dir_path),
             run_acc,
         ]
+        if verbose:
+            msg = "cmd: " + " ".join(cmd)
+            print(msg)
         process = run(cmd, capture_output=True)
         if process.returncode:
             msg = (
@@ -56,13 +59,15 @@ def download_fastq_from_sra(
             msg += f"\nstderr:\n{process.stderr.decode()}"
             raise RuntimeError(msg)
         if verbose:
-            msg = "cmd: " + " ".join(cmd)
-            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg = f"\nstdout:\n{process.stdout.decode()}"
             msg += f"\nstderr:\n{process.stderr.decode()}"
             print(msg)
 
         sra_dir = working_dir_path / run_acc
         cmd = [VALIDATE_BIN, str(sra_dir)]
+        if verbose:
+            msg = "cmd: " + " ".join(cmd)
+            print(msg)
         process = run(cmd, capture_output=True)
         if process.returncode:
             msg = (
@@ -73,8 +78,7 @@ def download_fastq_from_sra(
             msg += f"\nstderr:\n{process.stderr.decode()}"
             raise RuntimeError(msg)
         if verbose:
-            msg = "cmd: " + " ".join(cmd)
-            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg = f"\nstdout:\n{process.stdout.decode()}"
             msg += f"\nstderr:\n{process.stderr.decode()}"
             print(msg)
 
@@ -94,6 +98,9 @@ def download_fastq_from_sra(
             r"@$ac.$si.$ri:$sg:$sn",
             str(sra_dir),
         ]
+        if verbose:
+            msg = "cmd: " + " ".join(cmd)
+            print(msg)
         process = run(cmd, capture_output=True)
         if process.returncode:
             msg = (
@@ -104,8 +111,7 @@ def download_fastq_from_sra(
             msg += f"\nstderr:\n{process.stderr.decode()}"
             raise RuntimeError(msg)
         if verbose:
-            msg = "cmd: " + " ".join(cmd)
-            msg += f"\nstdout:\n{process.stdout.decode()}"
+            msg = f"\nstdout:\n{process.stdout.decode()}"
             msg += f"\nstderr:\n{process.stderr.decode()}"
             print(msg)
 
